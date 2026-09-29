@@ -6,10 +6,10 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.List;
 
+import io.antmedia.console.datastore.AbstractConsoleDataStore;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.glassfish.jersey.media.multipart.FormDataContentDisposition;
 import org.glassfish.jersey.media.multipart.FormDataParam;
-import org.red5.server.api.scope.IScope;
 import org.springframework.stereotype.Component;
 
 import com.google.gson.Gson;
@@ -18,6 +18,7 @@ import com.google.gson.JsonObject;
 import io.antmedia.AppSettings;
 import io.antmedia.datastore.db.types.Licence;
 import io.antmedia.datastore.db.types.User;
+import io.antmedia.rest.RestServiceBase;
 import io.antmedia.rest.model.Result;
 import io.antmedia.settings.ServerSettings;
 import io.swagger.v3.oas.annotations.info.Contact;
@@ -26,7 +27,6 @@ import io.swagger.v3.oas.annotations.ExternalDocumentation;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.servers.Server;
 import jakarta.ws.rs.Consumes;
 import jakarta.ws.rs.DELETE;
 import jakarta.ws.rs.GET;
@@ -40,7 +40,6 @@ import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 
@@ -70,7 +69,6 @@ public class RestServiceV2 extends CommonRestService {
 	@Path("/users")
 	@Produces(MediaType.APPLICATION_JSON)
 	@Consumes(MediaType.APPLICATION_JSON)
-	@Override
 	public Result addUser(@Parameter(description = "User object. If it is null, new user won't be created.", required = true) User user) {
 		return super.addUser(user);
 	}
@@ -187,6 +185,15 @@ public class RestServiceV2 extends CommonRestService {
 	@Consumes(MediaType.APPLICATION_JSON)
 	public Result authenticateUser(@Parameter(description = "User object to authenticate", required = true) User user) {
 	    return super.authenticateUser(user);
+	}
+	
+	@DELETE
+	@Path("/users/logout")
+	@Produces(MediaType.APPLICATION_JSON)
+	@Consumes(MediaType.APPLICATION_JSON)
+	@Override
+	public Result deleteSession() {
+	    return super.deleteSession();
 	}
 
 
@@ -306,6 +313,33 @@ public class RestServiceV2 extends CommonRestService {
 	@Produces(MediaType.APPLICATION_JSON)
 	public String getSystemResourcesInfo() {
 	    return super.getSystemResourcesInfo();
+	}
+
+	@Operation(summary = "Gets recent system resource usage history",
+	           responses = {@ApiResponse(responseCode = "200", description = "Successful operation")})
+	@GET
+	@Path("/system-resources/history")
+	@Produces(MediaType.APPLICATION_JSON)
+	public String getSystemResourcesHistory() {
+	    return super.getSystemResourcesHistory();
+	}
+
+	@Operation(summary = "Gets recent per-application metric history (viewers, live streams)",
+	           responses = {@ApiResponse(responseCode = "200", description = "Successful operation")})
+	@GET
+	@Path("/applications/{appName}/metrics-history")
+	@Produces(MediaType.APPLICATION_JSON)
+	public String getAppMetricsHistory(@Parameter(description = "Application name", required = true) @PathParam("appName") String appName) {
+	    return super.getAppMetricsHistory(appName);
+	}
+
+	@Operation(summary = "Gets current network throughput across physical NICs",
+	           responses = {@ApiResponse(responseCode = "200", description = "Successful operation")})
+	@GET
+	@Path("/network-status")
+	@Produces(MediaType.APPLICATION_JSON)
+	public String getNetworkStatus() {
+	    return super.getNetworkStatus();
 	}
 
 	@Operation(summary = "Gets GPU information",
@@ -527,8 +561,10 @@ public class RestServiceV2 extends CommonRestService {
 	@Path("/applications/{appName}")
 	@Produces(MediaType.APPLICATION_JSON)
 	public Result createApplication(@Parameter(description = "Name for the new application", required = true) @PathParam("appName") String appName, @Parameter(description = "file", required = true) @FormDataParam("file") InputStream inputStream) {
-	    Result result;
-	    if (appName != null && appName.matches("^[a-zA-Z0-9]*$")) {
+		logger.info("Application install request received for application {}", appName.replaceAll(RestServiceBase.REPLACE_CHARS, "_"));
+		Result result;
+		
+	    if (appName.matches(APP_NAME_REGEX)) {
 	        boolean applicationAlreadyExist = isApplicationExists(appName);
 	        if (!applicationAlreadyExist) {
 	            result = super.createApplication(appName, inputStream);
@@ -538,7 +574,9 @@ public class RestServiceV2 extends CommonRestService {
 	    } else {
 	        result = new Result(false, "Application name is not alphanumeric. Please provide alphanumeric characters");
 	    }
-	    return result;
+		logger.info("Application installation finished success: {}", result.isSuccess());
+
+		return result;
 	}
 
 

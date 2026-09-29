@@ -63,6 +63,7 @@
 				<exclude>libtensorflow*.jar</exclude>
 				<exclude>tensorflow*.jar</exclude>
 				<exclude>srt*.jar</exclude>
+				<exclude>ndi*.jar</exclude>
 			</excludes>
 		</fileSet>
 		<fileSet>
@@ -106,6 +107,8 @@
 				<exclude>cuda*ppc64le.jar</exclude>
 				<exclude>cuda*macosx*.jar</exclude>
 				<exclude>cuda*windows*.jar</exclude>
+				
+
 			</excludes>
 		</fileSet>
 		<fileSet>
@@ -161,6 +164,20 @@
 		<fileSet>
 			<directory>${project.basedir}/src/main/server/lib/native-linux-x86_64</directory>
 			<outputDirectory>lib/native-linux-x86_64</outputDirectory>
+			<includes>
+				<include>*</include>
+			</includes>
+		</fileSet>
+		<fileSet>
+			<directory>${project.build.directory}/native-linux-x86_64</directory>
+			<outputDirectory>lib/native-linux-x86_64</outputDirectory>
+			<includes>
+				<include>*</include>
+			</includes>
+		</fileSet>
+		<fileSet>
+			<directory>${project.build.directory}/native-linux-aarch64</directory>
+			<outputDirectory>lib/native-linux-aarch64</outputDirectory>
 			<includes>
 				<include>*</include>
 			</includes>
